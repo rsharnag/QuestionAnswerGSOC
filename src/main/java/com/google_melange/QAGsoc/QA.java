@@ -5,6 +5,8 @@ import java.io.File;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Unmarshaller;
 
+import com.clearnlp.dependency.DEPTree;
+import com.google_melange.cnlp.NLPDecode;
 import com.google_melange.Dataset.Dataset;
 import com.google_melange.Dataset.Question;
 import com.google_melange.Dataset.QuestionInstance;
@@ -16,10 +18,13 @@ public class QA {
  
 		Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
 		Dataset questionset = (Dataset) jaxbUnmarshaller.unmarshal(file);
+		NLPDecode cnlp = new NLPDecode("general-en");
 		for(Question ques: questionset.getQuestions()){
 			for(QuestionInstance q:ques.getQuestionList()){
 				if(q.lang.equals("en")){
-					System.out.println(q.question);
+					System.out.println("Question:"+q.question);
+					DEPTree tree = cnlp.process(q.question);
+					System.out.println(tree.toStringSRL() + "\n");
 				}
 			}
 		}

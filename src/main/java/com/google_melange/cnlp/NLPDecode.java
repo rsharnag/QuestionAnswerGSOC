@@ -18,64 +18,95 @@ import com.clearnlp.util.UTOutput;
  * @since 1.1.0
  * @author Jinho D. Choi ({@code jdchoi77@gmail.com})
  */
-public class NLPDecode
-{
-    final String language = AbstractReader.LANG_EN;
+public class NLPDecode {
+	final String language = AbstractReader.LANG_EN;
+	private AbstractComponent[] components =new AbstractComponent[5];
+	private AbstractTokenizer tokenizer ;
+	public NLPDecode(String modelType, String inputFile, String outputFile)
+			throws Exception {
+		AbstractTokenizer tokenizer = NLPGetter.getTokenizer(language);
+		AbstractComponent tagger = NLPGetter.getComponent(modelType, language,
+				NLPMode.MODE_POS);
+		AbstractComponent parser = NLPGetter.getComponent(modelType, language,
+				NLPMode.MODE_DEP);
+		AbstractComponent identifier = NLPGetter.getComponent(modelType,
+				language, NLPMode.MODE_PRED);
+		AbstractComponent classifier = NLPGetter.getComponent(modelType,
+				language, NLPMode.MODE_ROLE);
+		AbstractComponent labeler = NLPGetter.getComponent(modelType, language,
+				NLPMode.MODE_SRL);
 
-    public NLPDecode(String modelType, String inputFile, String outputFile) throws Exception
-    {
-	AbstractTokenizer tokenizer = NLPGetter.getTokenizer(language);
-	AbstractComponent tagger = NLPGetter.getComponent(modelType, language, NLPMode.MODE_POS);
-	AbstractComponent parser = NLPGetter.getComponent(modelType, language, NLPMode.MODE_DEP);
-	AbstractComponent identifier = NLPGetter.getComponent(modelType, language, NLPMode.MODE_PRED);
-	AbstractComponent classifier = NLPGetter.getComponent(modelType, language, NLPMode.MODE_ROLE);
-	AbstractComponent labeler = NLPGetter.getComponent(modelType, language, NLPMode.MODE_SRL);
+		AbstractComponent[] components = { tagger, parser, identifier,
+				classifier, labeler };
 
-	AbstractComponent[] components = {tagger, parser, identifier, classifier, labeler};
+		String sentence = "I'd like to meet Dr. Choi.";
+		process(tokenizer, components, sentence);
+		process(tokenizer, components,
+				UTInput.createBufferedFileReader(inputFile),
+				UTOutput.createPrintBufferedFileStream(outputFile));
+	}
 
-	String sentence = "I'd like to meet Dr. Choi.";
-	process(tokenizer, components, sentence);
-	process(tokenizer, components, UTInput.createBufferedFileReader(inputFile), UTOutput.createPrintBufferedFileStream(outputFile));
-    }
+	public NLPDecode(String modelType) throws Exception {
+		tokenizer = NLPGetter.getTokenizer(language);
+		AbstractComponent tagger = NLPGetter.getComponent(modelType, language,
+				NLPMode.MODE_POS);
+		AbstractComponent parser = NLPGetter.getComponent(modelType, language,
+				NLPMode.MODE_DEP);
+		AbstractComponent identifier = NLPGetter.getComponent(modelType,
+				language, NLPMode.MODE_PRED);
+		AbstractComponent classifier = NLPGetter.getComponent(modelType,
+				language, NLPMode.MODE_ROLE);
+		AbstractComponent labeler = NLPGetter.getComponent(modelType, language,
+				NLPMode.MODE_SRL);
+		
+		 components = new AbstractComponent[] { tagger, parser, identifier,
+				classifier, labeler };
 
-    public void process(AbstractTokenizer tokenizer, AbstractComponent[] components, String sentence)
-    {
-	DEPTree tree = NLPGetter.toDEPTree(tokenizer.getTokens(sentence));
+	}
+	public DEPTree process(String sentence){
 
-	for (AbstractComponent component : components)
-	    component.process(tree);
+		return process(tokenizer, components, sentence);
 
-	System.out.println(tree.toStringSRL()+"\n");
-    }
-
-    public void process(AbstractTokenizer tokenizer, AbstractComponent[] components, BufferedReader reader, PrintStream fout)
-    {
-	AbstractSegmenter segmenter = NLPGetter.getSegmenter(language, tokenizer);
-	DEPTree tree;
-
-	for (List<String> tokens : segmenter.getSentences(reader))
-	    {
-		tree = NLPGetter.toDEPTree(tokens);
+	}
+	public DEPTree process(AbstractTokenizer tokenizer,
+			AbstractComponent[] components, String sentence) {
+		DEPTree tree = NLPGetter.toDEPTree(tokenizer.getTokens(sentence));
 
 		for (AbstractComponent component : components)
-		    component.process(tree);
+			component.process(tree);
 
-		fout.println(tree.toStringSRL()+"\n");
-	    }
+//		System.out.println(tree.toStringSRL() + "\n");
+		return tree;
+	}
 
-	fout.close();
-    }
+	public void process(AbstractTokenizer tokenizer,
+			AbstractComponent[] components, BufferedReader reader,
+			PrintStream fout) {
+		AbstractSegmenter segmenter = NLPGetter.getSegmenter(language,
+				tokenizer);
+		DEPTree tree;
 
-    public static void main(String[] args)
-    {
-	String modelType = args[0];	// "general-en" or "medical-en"
-	String inputFile = args[1];
-	String outputFile = args[2];
+		for (List<String> tokens : segmenter.getSentences(reader)) {
+			tree = NLPGetter.toDEPTree(tokens);
 
-	try
-	    {
-		new NLPDecode(modelType, inputFile, outputFile);
-	    }
-	catch (Exception e) {e.printStackTrace();}
-    }
+			for (AbstractComponent component : components)
+				component.process(tree);
+
+			fout.println(tree.toStringSRL() + "\n");
+		}
+
+		fout.close();
+	}
+
+	public static void main(String[] args) {
+		String modelType = args[0]; // "general-en" or "medical-en"
+		String inputFile = args[1];
+		String outputFile = args[2];
+
+		try {
+			new NLPDecode(modelType, inputFile, outputFile);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 }
